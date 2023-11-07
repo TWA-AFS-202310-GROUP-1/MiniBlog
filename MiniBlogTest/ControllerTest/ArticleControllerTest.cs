@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Mime;
@@ -59,11 +60,7 @@ namespace MiniBlogTest.ControllerTest
         [Fact]
         public async void Should_create_article_and_register_user_correct()
         {
-            var client = GetClient(new ArticleStore(new List<Article>
-            {
-                new Article(null, "Happy new year", "Happy 2021 new year"),
-                new Article(null, "Happy Halloween", "Halloween is coming"),
-            }), new UserStore(new List<User>()));
+            var client = GetClient(new ArticleStore(),new UserStore(new List<User>()), MockArticleRepo());
 
             string userNameWhoWillAdd = "Tom";
             string articleContent = "What a good day today!";
@@ -92,6 +89,33 @@ namespace MiniBlogTest.ControllerTest
             Assert.True(users.Count == 1);
             Assert.Equal(userNameWhoWillAdd, users[0].Name);
             Assert.Equal("anonymous@unknow.com", users[0].Email);
+        }
+
+        private IArticleRepository MockArticleRepo()
+        {
+            var mock = new Mock<IArticleRepository>();
+            mock.Setup(repository => repository.CreateArticle(It.IsAny<Article>())).Returns(Task.FromResult(new Article
+            {
+                Id = "mockId",
+                UserName = "Tom",
+                Title = "Good day",
+                Content = "What a good day today!",
+            }));
+            mock.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
+            {
+                new Article(null, "Happy new year", "Happy 2021 new year"),
+                new Article(null, "Happy Halloween", "Halloween is coming"),
+                new Article("Tom", "Good day", "What a good day today!"),
+            }));
+            mock.Setup(repository => repository.GetById(It.IsAny<string>())).Returns(Task.FromResult(new Article
+            {
+                Id = "mockId",
+
+                UserName = "Tom",
+                Title = "Good day",
+                Content = "What a good day today!",
+            }));
+            return mock.Object;
         }
     }
 }
