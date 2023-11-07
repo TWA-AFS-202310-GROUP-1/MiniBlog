@@ -10,7 +10,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using MiniBlog;
 using MiniBlog.Model;
+using MiniBlog.Repositories;
 using MiniBlog.Stores;
+using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Sdk;
@@ -125,14 +127,14 @@ namespace MiniBlogTest.ControllerTest
                     new List<User>
                     {
                         new User(userName, string.Empty),
-                    }));
+                    }), MockArticleRepo());
 
             var articlesResponse = await client.GetAsync("/article");
 
             articlesResponse.EnsureSuccessStatusCode();
             var articles = JsonConvert.DeserializeObject<List<Article>>(
                 await articlesResponse.Content.ReadAsStringAsync());
-            Assert.Equal(2, articles.Count);
+            Assert.Equal(3, articles.Count);
 
             var userResponse = await client.GetAsync("/user");
             userResponse.EnsureSuccessStatusCode();
@@ -155,6 +157,33 @@ namespace MiniBlogTest.ControllerTest
             var usersLeft = JsonConvert.DeserializeObject<List<User>>(
                 await userResponseAfterDeletion.Content.ReadAsStringAsync());
             Assert.True(usersLeft.Count == 0);
+        }
+
+        private IArticleRepository MockArticleRepo()
+        {
+            var mock = new Mock<IArticleRepository>();
+            mock.Setup(repository => repository.CreateArticle(It.IsAny<Article>())).Returns(Task.FromResult(new Article
+            {
+                Id = "mockId",
+                UserName = "Tom",
+                Title = "Good day",
+                Content = "What a good day today!",
+            }));
+            mock.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
+            {
+                new Article(null, "Happy new year", "Happy 2021 new year"),
+                new Article(null, "Happy Halloween", "Halloween is coming"),
+                new Article("Tom", "Good day", "What a good day today!"),
+            }));
+            mock.Setup(repository => repository.GetById(It.IsAny<string>())).Returns(Task.FromResult(new Article
+            {
+                Id = "mockId",
+
+                UserName = "Tom",
+                Title = "Good day",
+                Content = "What a good day today!",
+            }));
+            return mock.Object;
         }
     }
 }
