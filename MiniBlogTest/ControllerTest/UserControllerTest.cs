@@ -10,7 +10,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using MiniBlog;
 using MiniBlog.Model;
+using MiniBlog.Repositories;
 using MiniBlog.Stores;
+using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Sdk;
@@ -30,7 +32,19 @@ namespace MiniBlogTest.ControllerTest
         public async Task Should_get_all_users()
         {
             // given
-            var client = GetClient(new ArticleStore(), new UserStore(new List<User>()));
+            var mockArticle = new Mock<IArticleRepository>();
+            mockArticle.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
+            {
+                new Article(null, "Happy new year", "Happy 2021 new year"),
+                new Article(null, "Happy Halloween", "Halloween is coming"),
+            }));
+            var mockUser = new Mock<IUserRepository>();
+            mockUser.Setup(repository => repository.GetUsers()).Returns(Task.FromResult(new List<User>
+            {
+                new User("Tom", default),
+                new User("Peter", default),
+            }));
+            var client = GetClient(mockArticle.Object, mockUser.Object);
 
             // when
             var response = await client.GetAsync("/user");
@@ -46,7 +60,20 @@ namespace MiniBlogTest.ControllerTest
         public async Task Should_register_user_success()
         {
             // given
-            var client = GetClient(new ArticleStore(), new UserStore(new List<User>()));
+            var mockArticle = new Mock<IArticleRepository>();
+            mockArticle.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
+            {
+                new Article(null, "Happy new year", "Happy 2021 new year"),
+                new Article(null, "Happy Halloween", "Halloween is coming"),
+            }));
+            var mockUser = new Mock<IUserRepository>();
+            mockUser.Setup(repository => repository.GetUsers()).Returns(Task.FromResult(new List<User>
+            {
+                new User("Tom", default),
+                new User("Peter", default),
+            }));
+            var client = GetClient(mockArticle.Object, mockUser.Object);
+
             var userName = "Tom";
             var email = "a@b.com";
             var user = new User(userName, email);
@@ -71,7 +98,16 @@ namespace MiniBlogTest.ControllerTest
         [Fact]
         public async Task Should_register_user_fail_when_UserStore_unavailable()
         {
-            var client = GetClient(new ArticleStore(), null);
+            var mockArticle = new Mock<IArticleRepository>();
+            mockArticle.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
+            {
+                new Article(null, "Happy new year", "Happy 2021 new year"),
+                new Article(null, "Happy Halloween", "Halloween is coming"),
+            }));
+            var mockUser = new Mock<IUserRepository>();
+            mockUser.Setup(repository => repository.GetUsers()).Returns(Task.FromResult(new List<User>()));
+            var client = GetClient(mockArticle.Object, mockUser.Object);
+            //var client = GetClient(new ArticleStore(), null);
 
             var userName = "Tom";
             var email = "a@b.com";
@@ -86,7 +122,19 @@ namespace MiniBlogTest.ControllerTest
         [Fact]
         public async Task Should_update_user_email_success_()
         {
-            var client = GetClient(new ArticleStore(), new UserStore(new List<User>()));
+            var mockArticle = new Mock<IArticleRepository>();
+            mockArticle.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
+            {
+                new Article(null, "Happy new year", "Happy 2021 new year"),
+                new Article(null, "Happy Halloween", "Halloween is coming"),
+            }));
+            var mockUser = new Mock<IUserRepository>();
+            mockUser.Setup(repository => repository.GetUsers()).Returns(Task.FromResult(new List<User>
+            {
+                new User("Tom", default),
+                new User("Peter", default),
+            }));
+            var client = GetClient(mockArticle.Object, mockUser.Object);
 
             var userName = "Tom";
             var originalEmail = "a@b.com";
@@ -114,7 +162,19 @@ namespace MiniBlogTest.ControllerTest
         {
             // given
             var userName = "Tom";
-            var client = GetClient(
+            var mockArticle = new Mock<IArticleRepository>();
+            mockArticle.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
+            {
+                new Article(userName, string.Empty, string.Empty),
+                new Article(userName, string.Empty, string.Empty),
+            }));
+            var mockUser = new Mock<IUserRepository>();
+            mockUser.Setup(repository => repository.GetUsers()).Returns(Task.FromResult(new List<User>
+            {
+                new User(userName, string.Empty),
+            }));
+            var client = GetClient(mockArticle.Object, mockUser.Object);
+            /*var client = GetClient(
                 new ArticleStore(
                     new List<Article>
                     {
@@ -125,7 +185,7 @@ namespace MiniBlogTest.ControllerTest
                     new List<User>
                     {
                         new User(userName, string.Empty),
-                    }));
+                    }));*/
 
             var articlesResponse = await client.GetAsync("/article");
 
