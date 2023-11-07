@@ -37,8 +37,8 @@ namespace MiniBlogTest.ControllerTest
             var response = await client.GetAsync("/article");
             response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadAsStringAsync();
-            var users = JsonConvert.DeserializeObject<List<Article>>(body);
-            Assert.Equal(2, users.Count);
+            var articles = JsonConvert.DeserializeObject<List<Article>>(body);
+            Assert.Equal(2, articles.Count);
         }
 
         [Fact]
@@ -60,10 +60,15 @@ namespace MiniBlogTest.ControllerTest
         public async void Should_create_article_and_register_user_correct()
         {
             var mock = new Mock<IArticleRepository>();
+            mock.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
+            {
+                new Article(null, "Happy new year", "Happy 2021 new year"),
+                new Article(null, "Happy Halloween", "Halloween is coming"),
+            }));
             mock.Setup(x => x.CreateArticle(It.IsAny<Article>())).Returns(Task.FromResult(
-                new Article(null, "Happy new year", "Happy 2021 new year")));
+                new Article(null, "ok", "okkkkkkkkkk")));
 
-            var mock2 = new Mock<UserRepository>();
+            var mock2 = new Mock<IUserRepository>();
             mock2.Setup(x => x.GetUsers()).Returns(Task.FromResult(new List<User>
             {
                 new User("Kevin"),

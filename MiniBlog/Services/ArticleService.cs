@@ -25,7 +25,7 @@ public class ArticleService
 
     public async Task<Article?> CreateArticle(Article article)
     {
-        if (article.UserName == null)
+        if (article.UserName != null)
         {
             List<User> users = await userRepository.GetUsers();
             if (!users.Exists(x => x.Name == article.UserName))
