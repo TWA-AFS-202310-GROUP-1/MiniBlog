@@ -27,13 +27,20 @@ namespace MiniBlogTest.ControllerTest
         [Fact]
         public async void Should_get_all_Article()
         {
-            var mock = new Mock<IArticleRepository>();
-            mock.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
+            var mockArticle = new Mock<IArticleRepository>();
+            mockArticle.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
             {
                 new Article(null, "Happy new year", "Happy 2021 new year"),
                 new Article(null, "Happy Halloween", "Halloween is coming"),
             }));
-            var client = GetClient(new ArticleStore(), new UserStore(new List<User>()), mock.Object);
+            var mockUser = new Mock<IUserRepository>();
+            mockUser.Setup(repository => repository.GetUsers()).Returns(Task.FromResult(new List<User>
+            {
+                new User("Tom", default),
+                new User("Peter", default),
+            }));
+
+            var client = GetClient(mockArticle.Object, mockUser.Object);
             var response = await client.GetAsync("/article");
             response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadAsStringAsync();
@@ -44,7 +51,20 @@ namespace MiniBlogTest.ControllerTest
         [Fact]
         public async void Should_create_article_fail_when_ArticleStore_unavailable()
         {
-            var client = GetClient(null, new UserStore(new List<User>()));
+            var mockArticle = new Mock<IArticleRepository>();
+            mockArticle.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
+            {
+                new Article(null, "Happy new year", "Happy 2021 new year"),
+                new Article(null, "Happy Halloween", "Halloween is coming"),
+            }));
+            var mockUser = new Mock<IUserRepository>();
+            mockUser.Setup(repository => repository.GetUsers()).Returns(Task.FromResult(new List<User>
+            {
+                new User("Tom", default),
+                new User("Peter", default),
+            }));
+            var client = GetClient(mockArticle.Object, mockUser.Object);
+
             string userNameWhoWillAdd = "Tom";
             string articleContent = "What a good day today!";
             string articleTitle = "Good day";
@@ -59,16 +79,35 @@ namespace MiniBlogTest.ControllerTest
         [Fact]
         public async void Should_create_article_and_register_user_correct()
         {
-            var client = GetClient(new ArticleStore(new List<Article>
+            var mockArticle = new Mock<IArticleRepository>();
+            mockArticle.Setup(repository => repository.GetArticles()).Returns(Task.FromResult(new List<Article>
             {
                 new Article(null, "Happy new year", "Happy 2021 new year"),
                 new Article(null, "Happy Halloween", "Halloween is coming"),
-            }), new UserStore(new List<User>()));
+            }));
+
+            var mockUser = new Mock<IUserRepository>();
+            mockUser.Setup(repository => repository.GetUsers()).Returns(Task.FromResult(new List<User>
+            {
+                new User("Tom", default),
+                new User("Peter", default),
+            }));
 
             string userNameWhoWillAdd = "Tom";
             string articleContent = "What a good day today!";
             string articleTitle = "Good day";
             Article article = new Article(userNameWhoWillAdd, articleTitle, articleContent);
+            article.Id = string.Empty;
+
+            mockArticle.Setup(repository => repository.CreateArticle(article)).Returns(Task.FromResult(new Article
+            {
+                Id = article.Id,
+                UserName = article.UserName,
+                Title = article.Title,
+                Content = article.Content,
+            }));
+
+            var client = GetClient(mockArticle.Object, mockUser.Object);
 
             var httpContent = JsonConvert.SerializeObject(article);
             StringContent content = new StringContent(httpContent, Encoding.UTF8, MediaTypeNames.Application.Json);
@@ -89,7 +128,7 @@ namespace MiniBlogTest.ControllerTest
             var usersJson = await userResponse.Content.ReadAsStringAsync();
             var users = JsonConvert.DeserializeObject<List<User>>(usersJson);
 
-            Assert.True(users.Count == 1);
+            Assert.True(users.Count == 3);
             Assert.Equal(userNameWhoWillAdd, users[0].Name);
             Assert.Equal("anonymous@unknow.com", users[0].Email);
         }

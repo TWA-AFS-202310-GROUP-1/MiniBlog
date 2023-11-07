@@ -10,32 +10,32 @@ namespace MiniBlog.Services;
 
 public class ArticleService
 {
-    private readonly ArticleStore articleStore = null!;
-    private readonly UserStore userStore = null!;
     private readonly IArticleRepository articleRepository = null!;
+    private readonly IUserRepository userRepository = null!;
 
-    public ArticleService(ArticleStore articleStore, UserStore userStore, IArticleRepository articleRepository)
+    public ArticleService(IArticleRepository articleRepository, IUserRepository userRepository)
     {
-        this.articleStore = articleStore;
-        this.userStore = userStore;
         this.articleRepository = articleRepository;
+        this.userRepository = userRepository;
     }
 
     public async Task<Article?> CreateArticle(Article article)
     {
-        // if (article.UserName != null)
-        // {
-        //     if (!userStore.Users.Exists(_ => article.UserName == _.Name))
-        //     {
-        //         userStore.Users.Add(new User(article.UserName));
-        //     }
+        var userList = await userRepository.GetUsers();
+        article.Id = string.Empty;
+        Article addedArticle = new Article();
 
-        //     articleStore.Articles.Add(article);
-        // }
+        if (article.UserName != null)
+        {
+            if (!userList.Exists(_ => article.UserName == _.Name))
+            {
+                await userRepository.CreateUser(new User(article.UserName));
+            }
 
-        // return articleStore.Articles.Find(articleExisted => articleExisted.Title == article.Title);
+            addedArticle = await articleRepository.CreateArticle(article);
+        }
 
-        return await this.articleRepository.CreateArticle(article);
+        return addedArticle;
     }
 
     public async Task<List<Article>> GetAll()
@@ -43,8 +43,8 @@ public class ArticleService
         return await articleRepository.GetArticles();
     }
 
-    public Article? GetById(Guid id)
+    public async Task<Article?> GetById(string id)
     {
-        return articleStore.Articles.FirstOrDefault(article => article.Id == id.ToString());
+        return await articleRepository.GetArticleById(id);
     }
 }
