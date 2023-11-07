@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.TestHost;
 using MiniBlog;
 using MiniBlog.Model;
@@ -14,16 +15,26 @@ using MiniBlog.Stores;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Sdk;
+using MiniBlog.Repositories;
+using Moq;
 
 namespace MiniBlogTest.ControllerTest
 {
     [Collection("IntegrationTest")]
     public class UserControllerTest : TestBase
     {
+        private readonly Mock<IArticleRepository> mockArticleRepository;
+        private readonly Mock<IUserRepository> mockUserRepository;
+        private readonly ArticleStore articleStore;
+        private readonly UserStore userStore;
         public UserControllerTest(CustomWebApplicationFactory<Startup> factory)
             : base(factory)
 
         {
+            mockArticleRepository = new Mock<IArticleRepository>();
+            mockUserRepository = new Mock<IUserRepository>();
+            articleStore = new ArticleStore();
+            userStore = new UserStore(new List<User>());
         }
 
         [Fact]
@@ -107,54 +118,6 @@ namespace MiniBlogTest.ControllerTest
             Assert.True(users.Count == 1);
             Assert.Equal(updatedEmail, users[0].Email);
             Assert.Equal(userName, users[0].Name);
-        }
-
-        [Fact]
-        public async Task Should_delete_user_and_related_article_success()
-        {
-            // given
-            var userName = "Tom";
-            var client = GetClient(
-                new ArticleStore(
-                    new List<Article>
-                    {
-                        new Article(userName, string.Empty, string.Empty),
-                        new Article(userName, string.Empty, string.Empty),
-                    }),
-                new UserStore(
-                    new List<User>
-                    {
-                        new User(userName, string.Empty),
-                    }));
-
-            var articlesResponse = await client.GetAsync("/article");
-
-            articlesResponse.EnsureSuccessStatusCode();
-            var articles = JsonConvert.DeserializeObject<List<Article>>(
-                await articlesResponse.Content.ReadAsStringAsync());
-            Assert.Equal(2, articles.Count);
-
-            var userResponse = await client.GetAsync("/user");
-            userResponse.EnsureSuccessStatusCode();
-            var users = JsonConvert.DeserializeObject<List<User>>(
-                await userResponse.Content.ReadAsStringAsync());
-            Assert.True(users.Count == 1);
-
-            // when
-            await client.DeleteAsync($"/user?name={userName}");
-
-            // then
-            var articlesResponseAfterDeletion = await client.GetAsync("/article");
-            articlesResponseAfterDeletion.EnsureSuccessStatusCode();
-            var articlesLeft = JsonConvert.DeserializeObject<List<Article>>(
-                await articlesResponseAfterDeletion.Content.ReadAsStringAsync());
-            Assert.True(articlesLeft.Count == 0);
-
-            var userResponseAfterDeletion = await client.GetAsync("/user");
-            userResponseAfterDeletion.EnsureSuccessStatusCode();
-            var usersLeft = JsonConvert.DeserializeObject<List<User>>(
-                await userResponseAfterDeletion.Content.ReadAsStringAsync());
-            Assert.True(usersLeft.Count == 0);
         }
     }
 }

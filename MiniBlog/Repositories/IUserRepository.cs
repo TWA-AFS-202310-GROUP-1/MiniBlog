@@ -1,6 +1,11 @@
-﻿namespace MiniBlog.Repositories
+﻿using System.Threading.Tasks;
+using MiniBlog.Model;
+
+namespace MiniBlog.Repositories
 {
-    public class IUserRepository
+    public interface IUserRepository
     {
+        Task<User> CreateUser(User user);
+        Task<User> GetUserByName(string userName);
     }
 }

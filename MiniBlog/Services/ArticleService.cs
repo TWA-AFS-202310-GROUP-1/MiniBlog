@@ -12,11 +12,19 @@ public class ArticleService
 {
     private readonly UserStore userStore = null!;
     private readonly IArticleRepository articleRepository = null!;
+    private IArticleRepository object1;
+    private IUserRepository object2;
 
     public ArticleService(UserStore userStore, IArticleRepository articleRepository)
     {
         this.userStore = userStore;
         this.articleRepository = articleRepository;
+    }
+
+    public ArticleService(IArticleRepository object1, IUserRepository object2)
+    {
+        this.object1 = object1;
+        this.object2 = object2;
     }
 
     public async Task<Article?> CreateArticle(Article article)
