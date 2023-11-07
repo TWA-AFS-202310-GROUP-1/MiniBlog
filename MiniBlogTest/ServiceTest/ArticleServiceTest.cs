@@ -27,23 +27,54 @@ public class ArticleServiceTest
         Assert.Equal("Happy new year", articleGet.Result.Title);
     }
 
-    // [Fact]
-    // public void Should_create_article_when_invoke_CreateArticle_given_input_article()
-    // {
-    //     // given
-    //     var newArticle = new Article("Jerry", "Let's code", "c#");
-    //     var articleStore = new ArticleStore();
-    //     var articleCountBeforeAddNewOne = articleStore.Articles.Count;
-    //     var userStore = new UserStore();
-    //     var articleService = new ArticleService(articleStore, userStore);
+    [Fact]
+    public async void Should_create_article_and_not_create_user_function_be_invoked_when_invoke_createArticle_given_user_name_existed()
+    {
+        var mockArticle = new Mock<IArticleRepository>();
+        var mockUser = new Mock<IUserRepository>();
+        mockUser.Setup(repository => repository.GetUsers()).Returns(Task.FromResult(new List<User>
+            {
+                new User("Tom", " "),
+                new User("Peter", " "),
+            }));
+        mockUser.Setup(obj => obj.CreateUser(new User("Jerry", "email"))).CallBase();
 
-    //     // when
-    //     var addedArticle = articleService.CreateArticle(newArticle);
+        var newArticle = new Article("Jerry", "Let's code", "c#");
+        newArticle.Id = string.Empty;
 
-    //     // then
-    //     Assert.Equal(articleCountBeforeAddNewOne + 1, articleStore.Articles.Count);
-    //     Assert.Equal(newArticle.Title, addedArticle.Title);
-    //     Assert.Equal(newArticle.Content, addedArticle.Content);
-    //     Assert.Equal(newArticle.UserName, addedArticle.UserName);
-    // }
+        mockArticle.Setup(repository => repository.CreateArticle(newArticle)).Returns(Task.FromResult(newArticle));
+        mockUser.Setup(repository => repository.CreateUser(new User())).Returns(Task.FromResult(new User("Jerry", "email")));
+
+        var articleService = new ArticleService(mockArticle.Object, mockUser.Object);
+        await articleService.CreateArticle(newArticle);
+
+        mockArticle.Verify(repository => repository.CreateArticle(newArticle), Times.Once);
+        mockUser.Verify(repository => repository.CreateUser(new User()), Times.Never);
+    }
+
+    [Fact]
+    public async void Should_create_article_and_create_user_function_be_invoked_when_invoke_createArticle_given_user_name_not_existed()
+    {
+        var mockArticle = new Mock<IArticleRepository>();
+        var mockUser = new Mock<IUserRepository>();
+
+        mockUser.Setup(repository => repository.GetUsers()).Returns(Task.FromResult(new List<User>
+            {
+                new User("Tom", " "),
+                new User("Peter", " "),
+            }));
+        var newArticle = new Article("Jerry", "Let's code", "c#");
+        newArticle.Id = string.Empty;
+
+        var newUser = new User("Jerry");
+
+        mockArticle.Setup(repository => repository.CreateArticle(newArticle)).Returns(Task.FromResult(new Article("Jerry", "Let's code", "c#")));
+        mockUser.Setup(repository => repository.CreateUser(newUser)).Returns(Task.FromResult(newUser));
+
+        var articleService = new ArticleService(mockArticle.Object, mockUser.Object);
+        await articleService.CreateArticle(newArticle);
+
+        mockArticle.Verify(repository => repository.CreateArticle(newArticle), Times.Once);
+        mockUser.Verify(repository => repository.CreateUser(newUser), Times.AtMostOnce);
+    }
 }
