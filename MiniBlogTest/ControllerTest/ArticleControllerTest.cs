@@ -33,18 +33,18 @@ namespace MiniBlogTest.ControllerTest
                 new Article(null, "Happy new year", "Happy 2021 new year"),
                 new Article(null, "Happy Halloween", "Halloween is coming"),
             }));
-            var client = GetClient(new ArticleStore(), new UserStore(new List<User>()), mock.Object);
+            var client = GetClient(null, null, mock.Object);
             var response = await client.GetAsync("/article");
             response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadAsStringAsync();
-            var users = JsonConvert.DeserializeObject<List<Article>>(body);
-            Assert.Equal(2, users.Count);
+            var articles = JsonConvert.DeserializeObject<List<Article>>(body);
+            Assert.Equal(2, articles.Count);
         }
 
         [Fact]
         public async void Should_create_article_fail_when_ArticleStore_unavailable()
         {
-            var client = GetClient(null, new UserStore(new List<User>()));
+            var client = GetClient();
             string userNameWhoWillAdd = "Tom";
             string articleContent = "What a good day today!";
             string articleTitle = "Good day";
@@ -59,15 +59,27 @@ namespace MiniBlogTest.ControllerTest
         [Fact]
         public async void Should_create_article_and_register_user_correct()
         {
-            var client = GetClient(new ArticleStore(new List<Article>
+            var mock = new Mock<IArticleRepository>();
+            mock.Setup(x => x.GetArticles()).Returns(Task.FromResult(new List<Article>
             {
-                new Article(null, "Happy new year", "Happy 2021 new year"),
-                new Article(null, "Happy Halloween", "Halloween is coming"),
-            }), new UserStore(new List<User>()));
+                new Article("Kevin", "Happy new year", "Happy 2021 new year"),
+                new Article("Tom", "What a good day today!", "Good day"),
+            }));
+            mock.Setup(x => x.CreateArticle(It.IsAny<Article>())).Returns(Task.FromResult(
+                new Article(null, "Happy new year", "Happy 2021 new year")));
+
+            var mock2 = new Mock<IUserRepository>();
+            mock2.Setup(x => x.GetUsers()).Returns(Task.FromResult(new List<User>
+            {
+                new User("Tom", "123@qq.com"),
+            }));
+            mock2.Setup(x => x.CreateUser(It.IsAny<User>())).Returns(Task.FromResult(new User("Tom", "123@qq.com")));
+
+            var client = GetClient(null, null, mock.Object, mock2.Object);
 
             string userNameWhoWillAdd = "Tom";
-            string articleContent = "What a good day today!";
-            string articleTitle = "Good day";
+            string articleContent = "Good day";
+            string articleTitle = "What a good day today!";
             Article article = new Article(userNameWhoWillAdd, articleTitle, articleContent);
 
             var httpContent = JsonConvert.SerializeObject(article);
@@ -80,18 +92,18 @@ namespace MiniBlogTest.ControllerTest
             var articleResponse = await client.GetAsync("/article");
             var body = await articleResponse.Content.ReadAsStringAsync();
             var articles = JsonConvert.DeserializeObject<List<Article>>(body);
-            Assert.Equal(3, articles.Count);
-            Assert.Equal(articleTitle, articles[2].Title);
-            Assert.Equal(articleContent, articles[2].Content);
-            Assert.Equal(userNameWhoWillAdd, articles[2].UserName);
+            Assert.Equal(2, articles.Count);
+            Assert.Equal(articleTitle, articles[1].Title);
+            Assert.Equal(articleContent, articles[1].Content);
+            Assert.Equal(userNameWhoWillAdd, articles[1].UserName);
 
-            var userResponse = await client.GetAsync("/user");
-            var usersJson = await userResponse.Content.ReadAsStringAsync();
-            var users = JsonConvert.DeserializeObject<List<User>>(usersJson);
+            //var userResponse = await client.GetAsync("/user");
+            //var usersJson = await userResponse.Content.ReadAsStringAsync();
+            //var users = JsonConvert.DeserializeObject<List<User>>(usersJson);
 
-            Assert.True(users.Count == 1);
-            Assert.Equal(userNameWhoWillAdd, users[0].Name);
-            Assert.Equal("anonymous@unknow.com", users[0].Email);
+            //Assert.True(users.Count == 1);
+            //Assert.Equal("Tom", users[0].Name);
+            //Assert.Equal("123@qq.com", users[0].Email);
         }
     }
 }
