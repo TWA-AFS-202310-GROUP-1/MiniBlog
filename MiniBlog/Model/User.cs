@@ -1,3 +1,6 @@
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson;
+using System;
 using System.Collections.Generic;
 
 namespace MiniBlog.Model
@@ -8,14 +11,20 @@ namespace MiniBlog.Model
         {
         }
 
+        public static string CollectionName => "Users";
+
         public User(string name, string email = "anonymous@unknow.com")
         {
-            this.Name = name;
-            this.Email = email;
+            Id = Guid.NewGuid().ToString();
+            Name = name;
+            Email = email;
         }
 
-        public string Name { get; set; }
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; } = null!;
+        public string Name { get; set; } = null!;
 
-        public string Email { get; set; }
+        public string Email { get; set; } = null!;
     }
 }
