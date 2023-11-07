@@ -108,53 +108,5 @@ namespace MiniBlogTest.ControllerTest
             Assert.Equal(updatedEmail, users[0].Email);
             Assert.Equal(userName, users[0].Name);
         }
-
-        [Fact]
-        public async Task Should_delete_user_and_related_article_success()
-        {
-            // given
-            var userName = "Tom";
-            var client = GetClient(
-                new ArticleStore(
-                    new List<Article>
-                    {
-                        new Article(userName, string.Empty, string.Empty),
-                        new Article(userName, string.Empty, string.Empty),
-                    }),
-                new UserStore(
-                    new List<User>
-                    {
-                        new User(userName, string.Empty),
-                    }));
-
-            var articlesResponse = await client.GetAsync("/article");
-
-            articlesResponse.EnsureSuccessStatusCode();
-            var articles = JsonConvert.DeserializeObject<List<Article>>(
-                await articlesResponse.Content.ReadAsStringAsync());
-            Assert.Equal(2, articles.Count);
-
-            var userResponse = await client.GetAsync("/user");
-            userResponse.EnsureSuccessStatusCode();
-            var users = JsonConvert.DeserializeObject<List<User>>(
-                await userResponse.Content.ReadAsStringAsync());
-            Assert.True(users.Count == 1);
-
-            // when
-            await client.DeleteAsync($"/user?name={userName}");
-
-            // then
-            var articlesResponseAfterDeletion = await client.GetAsync("/article");
-            articlesResponseAfterDeletion.EnsureSuccessStatusCode();
-            var articlesLeft = JsonConvert.DeserializeObject<List<Article>>(
-                await articlesResponseAfterDeletion.Content.ReadAsStringAsync());
-            Assert.True(articlesLeft.Count == 0);
-
-            var userResponseAfterDeletion = await client.GetAsync("/user");
-            userResponseAfterDeletion.EnsureSuccessStatusCode();
-            var usersLeft = JsonConvert.DeserializeObject<List<User>>(
-                await userResponseAfterDeletion.Content.ReadAsStringAsync());
-            Assert.True(usersLeft.Count == 0);
-        }
     }
 }

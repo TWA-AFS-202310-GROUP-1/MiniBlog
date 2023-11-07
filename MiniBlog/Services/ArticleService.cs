@@ -35,7 +35,7 @@ public class ArticleService
 
         // return articleStore.Articles.Find(articleExisted => articleExisted.Title == article.Title);
 
-        return await this.articleRepository.CreateArticle(article);
+        return await articleRepository.CreateArticle(article);
     }
 
     public async Task<List<Article>> GetAll()
